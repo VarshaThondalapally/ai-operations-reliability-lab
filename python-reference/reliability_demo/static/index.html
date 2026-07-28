@@ -1,0 +1,963 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <meta name="description" content="Interactive portfolio prototype for safe, observable home-care shift coverage." />
+  <title>AI Operations Reliability Lab</title>
+  <style>
+    :root {
+      --bg: #f5f7f8;
+      --card: #ffffff;
+      --ink: #14212a;
+      --muted: #667783;
+      --line: #dbe3e8;
+      --soft: #eef3f5;
+      --blue: #1d5f9f;
+      --blue-soft: #e7f1fb;
+      --green: #137548;
+      --green-soft: #e7f5ed;
+      --amber: #996500;
+      --amber-soft: #fff2d4;
+      --red: #b42318;
+      --red-soft: #fde8e5;
+      --shadow: 0 14px 34px rgba(21, 33, 42, 0.08);
+    }
+
+    * { box-sizing: border-box; }
+
+    body {
+      margin: 0;
+      background: var(--bg);
+      color: var(--ink);
+      font-family: Inter, ui-sans-serif, system-ui, -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+      font-size: 14px;
+      line-height: 1.42;
+    }
+
+    button, textarea { font: inherit; }
+    button { cursor: pointer; }
+
+    .app {
+      height: 100vh;
+      padding: 18px;
+      display: grid;
+      grid-template-rows: auto minmax(0, 1fr);
+      gap: 14px;
+      overflow: hidden;
+    }
+
+    .topbar {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      gap: 14px;
+      align-items: center;
+    }
+
+    h1, h2, h3, p { margin-top: 0; }
+
+    h1 {
+      margin-bottom: 5px;
+      font-size: 24px;
+      line-height: 1.15;
+      letter-spacing: 0;
+    }
+
+    .subtitle {
+      margin: 0;
+      color: var(--muted);
+      max-width: 980px;
+    }
+
+    .actions {
+      display: flex;
+      align-items: center;
+      justify-content: flex-end;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .btn {
+      min-height: 38px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: var(--card);
+      color: var(--ink);
+      padding: 0 13px;
+      font-weight: 750;
+    }
+
+    .btn.primary {
+      border-color: var(--ink);
+      background: var(--ink);
+      color: #fff;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      justify-content: center;
+      min-height: 25px;
+      border-radius: 999px;
+      padding: 0 9px;
+      font-size: 12px;
+      font-weight: 800;
+      border: 1px solid #a8ccec;
+      color: var(--blue);
+      background: var(--blue-soft);
+      white-space: nowrap;
+    }
+
+    .badge.good { color: var(--green); background: var(--green-soft); border-color: #a8d9be; }
+    .badge.warn { color: var(--amber); background: var(--amber-soft); border-color: #e4c573; }
+    .badge.bad { color: var(--red); background: var(--red-soft); border-color: #eca79f; }
+
+    .layout {
+      min-height: 0;
+      display: grid;
+      grid-template-columns: 300px minmax(580px, 1fr) 390px;
+      gap: 14px;
+      align-items: stretch;
+    }
+
+    .panel {
+      min-height: 0;
+      background: var(--card);
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      box-shadow: var(--shadow);
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .panel-head {
+      min-height: 54px;
+      padding: 13px 14px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: 10px;
+      flex: 0 0 auto;
+    }
+
+    .panel-head h2 {
+      margin: 0;
+      font-size: 15px;
+      line-height: 1.2;
+    }
+
+    .panel-head span {
+      color: var(--muted);
+      font-size: 12px;
+    }
+
+    .panel-body {
+      padding: 14px;
+      overflow: auto;
+      min-height: 0;
+    }
+
+    .scenario-list { display: flex; flex-direction: column; gap: 9px; }
+
+    .scenario {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      min-height: 76px;
+      padding: 11px;
+      text-align: left;
+    }
+
+    .scenario.active { border-color: var(--blue); background: var(--blue-soft); }
+    .scenario strong { display: block; margin-bottom: 4px; font-size: 13px; }
+    .scenario span { color: var(--muted); font-size: 12px; }
+
+    .custom-box {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    .custom-box textarea {
+      width: 100%;
+      min-height: 86px;
+      resize: vertical;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      padding: 10px;
+      color: var(--ink);
+      background: #fff;
+    }
+
+    .toggle-area {
+      margin-top: 14px;
+      padding-top: 14px;
+      border-top: 1px solid var(--line);
+    }
+
+    .toggle-area h3, .custom-box h3 { margin-bottom: 8px; font-size: 13px; }
+    .hint { color: var(--muted); font-size: 12px; margin-bottom: 10px; }
+
+    .toggle-row {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) auto;
+      align-items: center;
+      gap: 8px;
+      border-bottom: 1px solid var(--line);
+      padding: 9px 0;
+    }
+
+    .toggle-row:last-child { border-bottom: 0; }
+    .toggle-row strong { display: block; font-size: 12px; }
+    .toggle-row span { color: var(--muted); font-size: 11px; }
+
+    .switch {
+      width: 42px;
+      height: 24px;
+      border: 0;
+      border-radius: 999px;
+      background: #a8d9be;
+      padding: 3px;
+      display: flex;
+      justify-content: flex-end;
+      align-items: center;
+    }
+
+    .switch.off { justify-content: flex-start; background: #dfa29a; }
+    .knob { width: 18px; height: 18px; border-radius: 999px; background: #fff; box-shadow: 0 2px 6px rgba(0,0,0,0.16); }
+
+    .trace-wrap {
+      display: grid;
+      grid-template-rows: auto auto auto minmax(0, 1fr);
+      gap: 10px;
+      min-height: 0;
+      height: 100%;
+    }
+
+    .live-now {
+      border: 1px solid #a8ccec;
+      border-radius: 8px;
+      background: var(--blue-soft);
+      padding: 12px;
+      display: grid;
+      grid-template-columns: 150px minmax(0, 1fr);
+      gap: 12px;
+      align-items: center;
+      position: sticky;
+      top: 0;
+      z-index: 2;
+    }
+
+    .live-now span {
+      color: var(--blue);
+      font-size: 12px;
+      font-weight: 850;
+      text-transform: uppercase;
+    }
+
+    .live-now strong {
+      display: block;
+      font-size: 15px;
+      line-height: 1.25;
+    }
+
+    .live-now small {
+      display: block;
+      color: var(--muted);
+      margin-top: 3px;
+      font-size: 12px;
+    }
+
+    .live-now.good { border-color: #a8d9be; background: var(--green-soft); }
+    .live-now.warn { border-color: #e4c573; background: var(--amber-soft); }
+    .live-now.bad { border-color: #eca79f; background: var(--red-soft); }
+    .live-now.good span { color: var(--green); }
+    .live-now.warn span { color: var(--amber); }
+    .live-now.bad span { color: var(--red); }
+
+    .request-card {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 10px 12px;
+    }
+
+    .request-card span {
+      display: block;
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 750;
+      margin-bottom: 6px;
+    }
+
+    .request-card strong { display: block; font-size: 15px; line-height: 1.3; }
+
+    .signal-path {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: linear-gradient(90deg, rgba(29,95,159,0.06), transparent 30%), #fbfcfd;
+      padding: 10px;
+    }
+
+    .steps {
+      display: flex;
+      gap: 16px;
+      align-items: stretch;
+    }
+
+    .step {
+      min-height: 82px;
+      flex: 1 1 0;
+      position: relative;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 9px;
+      text-align: left;
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease;
+    }
+
+    .step:not(:last-child)::after {
+      content: ">";
+      position: absolute;
+      right: -13px;
+      top: 50%;
+      transform: translateY(-50%);
+      color: var(--muted);
+      font-size: 14px;
+      font-weight: 900;
+    }
+
+    .step.active {
+      transform: translateY(-3px);
+      border-color: var(--blue);
+      background: var(--blue-soft);
+      box-shadow: 0 0 0 3px rgba(29, 95, 159, 0.14);
+    }
+    .step.done { border-color: #a8d9be; background: var(--green-soft); }
+    .step.warn { border-color: #e4c573; background: var(--amber-soft); }
+    .step.bad { border-color: #eca79f; background: var(--red-soft); }
+
+    .step-num {
+      width: 24px;
+      height: 24px;
+      display: grid;
+      place-items: center;
+      border-radius: 999px;
+      background: var(--soft);
+      color: var(--muted);
+      font-size: 12px;
+      font-weight: 850;
+      margin-bottom: 8px;
+    }
+
+    .step.active .step-num { background: var(--blue); color: #fff; }
+    .step.done .step-num { background: var(--green); color: #fff; }
+    .step.warn .step-num { background: var(--amber); color: #fff; }
+    .step.bad .step-num { background: var(--red); color: #fff; }
+    .step h3 { margin-bottom: 5px; font-size: 13px; line-height: 1.2; }
+    .step p { margin: 0; color: var(--muted); font-size: 11px; }
+
+    .system-calls {
+      display: grid;
+      grid-template-columns: repeat(3, minmax(0, 1fr));
+      gap: 8px;
+      margin-top: 8px;
+    }
+
+    .sys-call {
+      min-height: 66px;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 9px;
+      text-align: left;
+      transition: transform 160ms ease, border-color 160ms ease, background 160ms ease, box-shadow 160ms ease;
+    }
+
+    .sys-call.active {
+      transform: translateY(-2px);
+      border-color: var(--blue);
+      background: var(--blue-soft);
+      box-shadow: 0 0 0 3px rgba(29, 95, 159, 0.14);
+    }
+    .sys-call.good { border-color: #a8d9be; background: var(--green-soft); }
+    .sys-call.warn { border-color: #e4c573; background: var(--amber-soft); }
+    .sys-call.bad { border-color: #eca79f; background: var(--red-soft); }
+    .sys-call strong { display: block; margin-bottom: 4px; font-size: 12px; }
+    .sys-call span { display: block; color: var(--muted); font-size: 11px; }
+
+    .live-log {
+      min-height: 0;
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      overflow: hidden;
+      display: flex;
+      flex-direction: column;
+    }
+
+    .log-head {
+      padding: 10px 12px;
+      border-bottom: 1px solid var(--line);
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .log-head strong { font-size: 13px; }
+    .events {
+      padding: 10px;
+      overflow: auto;
+      display: flex;
+      flex-direction: column;
+      gap: 8px;
+      min-height: 0;
+      flex: 1 1 auto;
+    }
+
+    .event {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      padding: 10px;
+      display: grid;
+      grid-template-columns: 46px minmax(0, 1fr);
+      gap: 10px;
+      text-align: left;
+    }
+
+    .event.good { border-color: #a8d9be; background: var(--green-soft); }
+    .event.warn { border-color: #e4c573; background: var(--amber-soft); }
+    .event.bad { border-color: #eca79f; background: var(--red-soft); }
+    .event-time { color: var(--muted); font-size: 11px; font-weight: 850; }
+    .event strong { display: block; font-size: 12px; margin-bottom: 3px; }
+    .event span { color: var(--muted); font-size: 12px; }
+
+    .next-actions {
+      margin-top: 10px;
+      display: flex;
+      gap: 8px;
+      flex-wrap: wrap;
+    }
+
+    .next-actions button {
+      border: 1px solid var(--line);
+      border-radius: 8px;
+      background: #fff;
+      min-height: 34px;
+      padding: 0 10px;
+      font-weight: 800;
+    }
+
+    .inspector { display: flex; flex-direction: column; gap: 14px; }
+    .inspect-card { border: 1px solid var(--line); border-radius: 8px; background: #fff; padding: 12px; }
+    .inspect-card h3 { margin-bottom: 9px; font-size: 14px; }
+    .detail-grid { display: grid; gap: 8px; }
+    .detail-row { display: grid; grid-template-columns: 92px minmax(0, 1fr); gap: 9px; padding-top: 8px; border-top: 1px solid var(--line); font-size: 12px; }
+    .detail-row:first-child { border-top: 0; padding-top: 0; }
+    .detail-row span:first-child { color: var(--muted); font-weight: 850; }
+    .detail-row strong { word-break: break-word; }
+
+    .outcome { border: 1px solid #a8d9be; border-radius: 8px; background: var(--green-soft); padding: 12px; }
+    .outcome.warn { border-color: #e4c573; background: var(--amber-soft); }
+    .outcome.bad { border-color: #eca79f; background: var(--red-soft); }
+    .outcome h3 { margin-bottom: 5px; font-size: 15px; }
+    .outcome p { margin: 0; color: #32424c; }
+
+    @media (max-width: 1280px) {
+      .app { height: auto; min-height: 100vh; overflow: visible; }
+      .layout { grid-template-columns: 1fr; }
+      .steps { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); }
+      .step::after { display: none; }
+      .system-calls { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+    }
+
+    @media (max-width: 760px) {
+      .app { padding: 12px; }
+      .topbar, .steps, .system-calls, .live-now { grid-template-columns: 1fr; }
+      .actions { justify-content: flex-start; }
+    }
+  </style>
+</head>
+<body>
+  <main class="app">
+    <header class="topbar">
+      <div>
+        <h1 id="appTitle">AI Operations Reliability Lab</h1>
+        <p class="subtitle">Run a fictional home-care call-out and replay how intent parsing, caregiver and care-plan checks, scheduling constraints, compliance gates, EMR updates, and human escalation work before a shift can change.</p>
+      </div>
+      <div class="actions">
+        <span class="badge">Portfolio prototype</span>
+        <span class="badge">Synthetic data</span>
+        <span class="badge">Mock integrations</span>
+        <span class="badge" id="aiSource">AI parser ready</span>
+        <span class="badge" id="runState">Ready</span>
+        <button class="btn" id="evalBtn">Run evals</button>
+        <button class="btn" id="resetBtn">Reset DB</button>
+        <button class="btn primary" id="runBtn">Run request</button>
+      </div>
+    </header>
+
+    <section class="layout">
+      <aside class="panel">
+        <div class="panel-head">
+          <h2>Scenario</h2>
+          <span>what to prove</span>
+        </div>
+        <div class="panel-body">
+          <div class="scenario-list" id="scenarioList"></div>
+
+          <div class="custom-box">
+            <h3>Custom operations request</h3>
+            <p class="hint">Optional. Uses OpenAI if a local key is configured; otherwise it uses the deterministic parser. Missing or unsafe details clarify, block, or escalate.</p>
+            <textarea id="customText" placeholder="Describe a fictional caregiver call-out or shift reassignment..."></textarea>
+          </div>
+
+          <div class="toggle-area">
+            <h3>Mock home-care systems</h3>
+            <p class="hint">SQLite-backed adapters model a caregiver directory, shift scheduler, client care plan, qualification rules, EMR, and operations escalation.</p>
+            <div id="systemToggles"></div>
+          </div>
+        </div>
+      </aside>
+
+      <section class="panel">
+        <div class="panel-head">
+          <h2>Execution replay</h2>
+          <span>completed request to verified action</span>
+        </div>
+        <div class="panel-body">
+          <div class="trace-wrap">
+            <div class="live-now" id="liveNow">
+              <span>Now</span>
+              <div>
+                <strong>Waiting for request</strong>
+                <small>Click Run request to watch each check in order.</small>
+              </div>
+            </div>
+
+            <div class="request-card">
+              <span>Operations request</span>
+              <strong id="transcript">Loading...</strong>
+            </div>
+
+            <div class="signal-path">
+              <div class="steps" id="steps"></div>
+              <div class="system-calls" id="systemCalls"></div>
+            </div>
+
+            <div class="live-log">
+              <div class="log-head">
+                <strong>Decision trace and mock adapter calls</strong>
+                <span class="badge" id="eventCount">0 events</span>
+              </div>
+              <div class="events" id="events"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <aside class="panel">
+        <div class="panel-head">
+          <h2>Step inspector</h2>
+          <span>exact explanation</span>
+        </div>
+        <div class="panel-body">
+          <div class="inspector">
+            <div class="inspect-card">
+              <h3 id="inspectTitle">Waiting for request</h3>
+              <div class="detail-grid" id="inspectRows"></div>
+            </div>
+            <div class="outcome" id="outcomeBox">
+              <h3>Outcome not generated yet</h3>
+              <p>The final action or handoff appears here after the trace runs.</p>
+            </div>
+            <div class="inspect-card">
+              <h3>Operations packet</h3>
+              <div class="detail-grid" id="packetRows">
+                <div class="detail-row"><span>Status</span><strong>Waiting for request</strong></div>
+              </div>
+            </div>
+          </div>
+        </div>
+      </aside>
+    </section>
+  </main>
+
+  <script>
+    const state = {
+      operation: null,
+      scenarios: [],
+      steps: [],
+      integrations: [],
+      selectedScenario: "coverage",
+      lastRun: null,
+      running: false
+    };
+
+    const $ = (selector) => document.querySelector(selector);
+    const $$ = (selector) => Array.from(document.querySelectorAll(selector));
+
+    async function api(path, options = {}) {
+      const res = await fetch(path, {
+        headers: { "Content-Type": "application/json" },
+        ...options
+      });
+      if (!res.ok) throw new Error(await res.text());
+      return res.json();
+    }
+
+    function stringify(value) {
+      if (value === null || value === undefined) return "";
+      if (typeof value === "string") return value;
+      return JSON.stringify(value);
+    }
+
+    function escapeHtml(value) {
+      return String(value).replace(/[&<>"']/g, (char) => ({
+        "&": "&amp;",
+        "<": "&lt;",
+        ">": "&gt;",
+        "\"": "&quot;",
+        "'": "&#39;",
+      }[char]));
+    }
+
+    function safe(value) {
+      return escapeHtml(stringify(value));
+    }
+
+    function badgeClass(status) {
+      if (status === "good" || status === "success") return "good";
+      if (status === "warn" || status === "warning") return "warn";
+      if (status === "bad" || status === "error") return "bad";
+      return "";
+    }
+
+    function selectedScenario() {
+      return state.scenarios.find(item => item.id === state.selectedScenario) || state.scenarios[0];
+    }
+
+    function renderScenarios() {
+      const wrap = $("#scenarioList");
+      wrap.innerHTML = "";
+      state.scenarios.forEach((scenario) => {
+        const button = document.createElement("button");
+        button.className = "scenario" + (scenario.id === state.selectedScenario ? " active" : "");
+        button.innerHTML = `<strong>${safe(scenario.title)}</strong><span>${safe(scenario.subtitle)}</span>`;
+        button.addEventListener("click", () => {
+          state.selectedScenario = scenario.id;
+          $("#customText").value = "";
+          resetRunView();
+          render();
+        });
+        wrap.appendChild(button);
+      });
+      const custom = $("#customText").value.trim();
+      $("#transcript").textContent = custom || selectedScenario().transcript;
+    }
+
+    function renderToggles() {
+      const wrap = $("#systemToggles");
+      wrap.innerHTML = "";
+      state.integrations.forEach((item) => {
+        const online = Boolean(item.online);
+        const row = document.createElement("div");
+        row.className = "toggle-row";
+        row.innerHTML = `
+          <div><strong>${safe(item.label)}</strong><span>${online ? "online" : "offline"} - ${safe(item.description)}</span></div>
+          <button class="switch ${online ? "" : "off"}" data-key="${safe(item.key)}">
+            <span class="knob"></span>
+          </button>
+        `;
+        wrap.appendChild(row);
+      });
+      $$("[data-key]").forEach((button) => {
+        button.addEventListener("click", async () => {
+          const key = button.dataset.key;
+          const item = state.integrations.find(row => row.key === key);
+          const data = await api(`/api/integrations/${key}`, {
+            method: "POST",
+            body: JSON.stringify({ online: !Boolean(item.online) })
+          });
+          state.integrations = data.integrations;
+          resetRunView(false);
+          render();
+        });
+      });
+    }
+
+    function renderSteps() {
+      const wrap = $("#steps");
+      wrap.innerHTML = "";
+      state.steps.forEach((step, index) => {
+        const node = document.createElement("button");
+        node.className = "step";
+        node.dataset.step = step.id;
+        node.innerHTML = `
+          <div class="step-num">${index + 1}</div>
+          <h3>${safe(step.title)}</h3>
+          <p>${safe(step.description)}</p>
+        `;
+        node.addEventListener("click", () => inspectStep(step));
+        wrap.appendChild(node);
+      });
+    }
+
+    function renderSystemCalls(events = [], currentEvent = null) {
+      const wrap = $("#systemCalls");
+      wrap.innerHTML = "";
+      const latestBySystem = {};
+      events.filter(event => event.system).forEach((event) => {
+        latestBySystem[event.system] = event;
+      });
+
+      state.integrations.forEach((system) => {
+        const event = latestBySystem[system.key];
+        const online = Boolean(system.online);
+        const active = currentEvent && currentEvent.system === system.key;
+        const status = active ? "active" : (!online ? "bad" : event ? badgeClass(event.status) : "");
+        const item = document.createElement("button");
+        item.className = `sys-call ${status}`;
+        item.innerHTML = `
+          <strong>${safe(system.label)}</strong>
+          <span>${event ? safe(event.call) : online ? "ready" : "offline"}</span>
+          <span>${event ? safe(event.result) : safe(system.description)}</span>
+        `;
+        item.addEventListener("click", () => {
+          if (event) {
+            inspectEvent(event);
+          } else {
+            renderInspector(system.label, {
+              "System": system.key,
+              "Readiness": online ? "online" : "offline",
+              "Role": system.description,
+            });
+          }
+        });
+        wrap.appendChild(item);
+      });
+    }
+
+    function inspectStep(step) {
+      renderInspector(step.title, {
+        "What": step.description,
+        "Why": step.why,
+      });
+    }
+
+    function inspectEvent(event) {
+      renderInspector(event.call, {
+        "Step": event.step,
+        "Why": event.why,
+        "Input": stringify(event.input),
+        "Result": stringify(event.result),
+        "Status": event.status,
+      });
+    }
+
+    function renderInspector(title, rows) {
+      $("#inspectTitle").textContent = title;
+      const wrap = $("#inspectRows");
+      wrap.innerHTML = "";
+      Object.entries(rows).forEach(([label, value]) => {
+        const row = document.createElement("div");
+        row.className = "detail-row";
+        row.innerHTML = `<span>${safe(label)}</span><strong>${safe(value)}</strong>`;
+        wrap.appendChild(row);
+      });
+    }
+
+    function setLiveNow(label, title, detail = "", status = "") {
+      const box = $("#liveNow");
+      box.className = "live-now " + badgeClass(status);
+      box.innerHTML = `
+        <span>${safe(label)}</span>
+        <div>
+          <strong>${safe(title)}</strong>
+          <small>${safe(detail)}</small>
+        </div>
+      `;
+    }
+
+    function setStepState(stepId, className) {
+      const node = document.querySelector(`[data-step="${stepId}"]`);
+      if (!node) return;
+      node.classList.remove("active", "done", "warn", "bad");
+      node.classList.add(className);
+    }
+
+    function clearStepStates() {
+      $$(".step").forEach(node => node.classList.remove("active", "done", "warn", "bad"));
+    }
+
+    function addEvent(event, index) {
+      const row = document.createElement("button");
+      row.className = "event " + badgeClass(event.status);
+      row.innerHTML = `
+        <span class="event-time">${String(index + 1).padStart(2, "0")}</span>
+        <div><strong>${safe(event.call)}</strong><span>${safe(event.why)} ${safe(event.result)}</span></div>
+      `;
+      row.addEventListener("click", () => inspectEvent(event));
+      $("#events").appendChild(row);
+      $("#eventCount").textContent = `${index + 1} events`;
+      $("#events").scrollTop = $("#events").scrollHeight;
+    }
+
+    function renderOutcome(outcome) {
+      const box = $("#outcomeBox");
+      box.className = "outcome " + badgeClass(outcome.status);
+      box.innerHTML = `<h3>${safe(outcome.title)}</h3><p>${safe(outcome.detail)}</p>`;
+      if (outcome.type === "CLARIFY" && Array.isArray(outcome.suggestions) && outcome.suggestions.length) {
+        const actions = document.createElement("div");
+        actions.className = "next-actions";
+        actions.innerHTML = outcome.suggestions
+          .map((item, index) => `<button data-suggestion-index="${index}">${safe(item.label)}</button>`)
+          .join("");
+        box.appendChild(actions);
+        $$("[data-suggestion-index]").forEach((button) => {
+          button.addEventListener("click", () => {
+            const suggestion = outcome.suggestions[Number(button.dataset.suggestionIndex)];
+            continueWithSuggestion(suggestion);
+          });
+        });
+      }
+      const packet = $("#packetRows");
+      packet.innerHTML = "";
+      Object.entries(outcome.packet || {}).forEach(([label, value]) => {
+        const row = document.createElement("div");
+        row.className = "detail-row";
+        row.innerHTML = `<span>${safe(label)}</span><strong>${safe(value)}</strong>`;
+        packet.appendChild(row);
+      });
+    }
+
+    function resetRunView(keepRender = true) {
+      state.lastRun = null;
+      $("#runState").textContent = "Ready";
+      $("#runState").className = "badge";
+      $("#aiSource").textContent = "AI parser ready";
+      $("#aiSource").className = "badge";
+      $("#events").innerHTML = "";
+      $("#eventCount").textContent = "0 events";
+      $("#outcomeBox").className = "outcome";
+      $("#outcomeBox").innerHTML = `<h3>Outcome not generated yet</h3><p>The final action or handoff appears here after the trace runs.</p>`;
+      $("#packetRows").innerHTML = `<div class="detail-row"><span>Status</span><strong>Waiting for request</strong></div>`;
+      setLiveNow("Now", "Waiting for request", "Click Run request to watch each check in order.");
+      renderInspector("Waiting for request", { "What": "Select a scenario and run the request." });
+      clearStepStates();
+      renderSystemCalls([]);
+      if (keepRender) render();
+    }
+
+    async function runRequest() {
+      if (state.running) return;
+      state.running = true;
+      resetRunView(false);
+      $("#runState").textContent = "Running";
+      $("#runState").className = "badge warn";
+      setLiveNow("Starting", "Preparing execution replay", "The backend completes first; the app replays each decision step.", "warn");
+
+      const custom = $("#customText").value.trim();
+      const payload = custom
+        ? { transcript: custom }
+        : { scenario_id: state.selectedScenario };
+      $("#transcript").textContent = custom || selectedScenario().transcript;
+
+      try {
+        const result = await api("/api/run", {
+          method: "POST",
+          body: JSON.stringify(payload)
+        });
+        state.lastRun = result;
+        state.integrations = result.integrations;
+        $("#aiSource").textContent = `parser: ${result.ai_source}`;
+        $("#aiSource").className = "badge " + (result.ai_source === "openai" ? "good" : "");
+        renderToggles();
+        renderSystemCalls([]);
+
+        for (let i = 0; i < result.events.length; i++) {
+          const event = result.events[i];
+          setLiveNow(event.step, event.call, `${event.why} ${stringify(event.result)}`, event.status);
+          setStepState(event.step, "active");
+          renderSystemCalls(result.events.slice(0, i), event);
+          inspectEvent(event);
+          await new Promise(resolve => setTimeout(resolve, 360));
+          addEvent(event, i);
+          renderSystemCalls(result.events.slice(0, i + 1));
+          setStepState(event.step, event.status === "bad" ? "bad" : event.status === "warn" ? "warn" : "done");
+        }
+        renderOutcome(result.outcome);
+        setLiveNow("Outcome", result.outcome.title, result.outcome.detail, result.outcome.status);
+        $("#runState").textContent = result.outcome.status === "success" ? "Completed" : "Needs attention";
+        $("#runState").className = "badge " + badgeClass(result.outcome.status);
+      } catch (error) {
+        $("#runState").textContent = "Run failed";
+        $("#runState").className = "badge bad";
+        setLiveNow("Error", "Run failed", String(error.message || error), "bad");
+        renderInspector("Run failed", { "Error": String(error.message || error) });
+      } finally {
+        state.running = false;
+      }
+    }
+
+    async function continueWithSuggestion(suggestion) {
+      $("#customText").value = suggestion.transcript;
+      $("#transcript").textContent = $("#customText").value;
+      setLiveNow("Clarification", suggestion.label, "The workflow reruns with the selected shift context.", "warn");
+      await runRequest();
+    }
+
+    async function runEvals() {
+      $("#runState").textContent = "Running evals";
+      $("#runState").className = "badge warn";
+      setLiveNow("Evals", "Running scripted reliability checks", "This validates outcomes and safety side effects across home-care scenarios.", "warn");
+      const data = await api("/api/evals", { method: "POST" });
+      const rows = {};
+      data.results.forEach(item => {
+        rows[item.title] = `${item.passed ? "PASS" : "FAIL"} (${item.actual}, expected ${item.expected})`;
+      });
+      renderInspector(data.passed ? "Reliability checks passed" : "Reliability checks failed", rows);
+      $("#runState").textContent = data.passed ? "Evals passed" : "Evals failed";
+      $("#runState").className = "badge " + (data.passed ? "good" : "bad");
+      setLiveNow("Evals", data.passed ? "Reliability checks passed" : "Reliability checks failed", `${data.results.length} scripted cases checked.`, data.passed ? "good" : "bad");
+    }
+
+    function render() {
+      $("#appTitle").textContent = "AI Operations Reliability Lab";
+      renderScenarios();
+      renderToggles();
+      renderSteps();
+      if (!state.lastRun) renderSystemCalls([]);
+    }
+
+    async function load() {
+      const data = await api("/api/bootstrap");
+      state.operation = data.operation;
+      state.scenarios = data.scenarios;
+      state.steps = data.steps;
+      state.integrations = data.integrations;
+      render();
+      resetRunView(false);
+    }
+
+    $("#runBtn").addEventListener("click", runRequest);
+    $("#resetBtn").addEventListener("click", async () => {
+      await api("/api/reset", { method: "POST" });
+      await load();
+    });
+    $("#evalBtn").addEventListener("click", runEvals);
+    $("#customText").addEventListener("input", () => {
+      $("#transcript").textContent = $("#customText").value.trim() || selectedScenario().transcript;
+    });
+
+    load().catch(error => {
+      document.body.innerHTML = `<pre style="padding:20px;color:#b42318">${safe(error.stack || error)}</pre>`;
+    });
+  </script>
+</body>
+</html>

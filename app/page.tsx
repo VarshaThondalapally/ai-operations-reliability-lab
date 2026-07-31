@@ -4,11 +4,11 @@ import { useMemo, useState } from "react";
 
 type Status = "good" | "warn" | "bad" | "info";
 type SystemKey =
-  | "workforce"
-  | "scheduler"
-  | "carePlan"
-  | "compliance"
-  | "emr"
+  | "crm"
+  | "coverage"
+  | "dispatch"
+  | "claims"
+  | "consent"
   | "routing";
 
 type TraceEvent = {
@@ -21,7 +21,7 @@ type TraceEvent = {
 };
 
 type Outcome = {
-  type: "REASSIGNED" | "CLARIFY" | "HANDOFF" | "BLOCKED" | "DUPLICATE";
+  type: "BOOKED" | "CLARIFY" | "HANDOFF" | "BLOCKED" | "DUPLICATE";
   title: string;
   detail: string;
   status: Status;
@@ -44,34 +44,34 @@ const systems: Array<{
   description: string;
 }> = [
   {
-    key: "workforce",
-    label: "Caregiver directory",
-    description: "Identity, qualifications, zones, and contact permission",
+    key: "crm",
+    label: "Mock CRM",
+    description: "Caller, property, open-loss, and duplicate-job records",
   },
   {
-    key: "scheduler",
-    label: "Shift scheduler",
-    description: "Assigned visits, availability, and conflicts",
+    key: "coverage",
+    label: "Service coverage",
+    description: "Territory, loss type, safety, and response-policy checks",
   },
   {
-    key: "carePlan",
-    label: "Client care plan",
-    description: "Service needs and qualification constraints",
+    key: "dispatch",
+    label: "Dispatch calendar",
+    description: "Crew capacity, response window, and assignment status",
   },
   {
-    key: "compliance",
-    label: "Qualification rules",
-    description: "Deterministic eligibility before reassignment",
+    key: "claims",
+    label: "Claims intake",
+    description: "Carrier context, evidence checklist, and estimating handoff",
   },
   {
-    key: "emr",
-    label: "Mock EMR",
-    description: "Assignment and operational-note updates",
+    key: "consent",
+    label: "Contact consent",
+    description: "Permission and preferred channel for operational updates",
   },
   {
     key: "routing",
-    label: "Operations escalation",
-    description: "Human ownership when automation stops",
+    label: "Human escalation",
+    description: "Named ownership when automation must stop",
   },
 ];
 
@@ -79,8 +79,8 @@ const steps = [
   {
     id: "request",
     number: "01",
-    title: "Request received",
-    description: "Preserve raw operations language",
+    title: "Call preserved",
+    description: "Keep the caller's exact loss report",
   },
   {
     id: "intent",
@@ -92,24 +92,24 @@ const steps = [
     id: "route",
     number: "03",
     title: "Workflow routed",
-    description: "Select the evidence required",
+    description: "Select the required operational checks",
   },
   {
     id: "checks",
     number: "04",
     title: "Systems checked",
-    description: "Verify operational sources of truth",
+    description: "Verify business sources of truth",
   },
   {
     id: "gate",
     number: "05",
-    title: "Decision gate",
-    description: "Complete, clarify, block, or escalate",
+    title: "Decision gated",
+    description: "Book, clarify, block, dedupe, or escalate",
   },
   {
     id: "final",
     number: "06",
-    title: "Action + visibility",
+    title: "Action visible",
     description: "Write safely or create an owned handoff",
   },
 ];
@@ -117,547 +117,453 @@ const steps = [
 const baseEvents: TraceEvent[] = [
   {
     step: "request",
-    call: "INBOUND_OPERATION",
-    reason: "Preserve the exact coordinator or caregiver language.",
-    result: "Request stored",
+    call: "INBOUND_CALL_TRANSCRIPT",
+    reason: "Preserve the caller's exact language before interpretation.",
+    result: "Transcript stored",
     status: "good",
   },
   {
     step: "intent",
     call: "POST /intent/parse",
-    reason: "Convert unstructured language into typed operational fields.",
+    reason: "Convert an unstructured loss report into typed intake fields.",
     result: "Structured intent created",
     status: "good",
   },
   {
     step: "route",
     call: "POST /workflow/route",
-    reason: "Choose the shift-coverage checks required for this request.",
-    result: "Coverage workflow selected",
+    reason: "Choose the checks required for emergency restoration intake.",
+    result: "Loss-intake workflow selected",
     status: "good",
   },
 ];
 
-const verifiedEvents: TraceEvent[] = [
+const bookedEvents: TraceEvent[] = [
   ...baseEvents,
   {
     step: "checks",
-    call: "MOCK GET /workforce/caregiver",
-    reason: "Resolve the original caregiver.",
-    result: "Maya Patel verified",
+    call: "MOCK GET /crm/property",
+    reason: "Resolve the caller, property, and any open loss before creating work.",
+    result: "1407 Ashwood Dr verified - no open job",
     status: "good",
-    system: "workforce",
+    system: "crm",
   },
   {
     step: "checks",
-    call: "MOCK GET /care-plan/client",
-    reason: "Resolve the client and required service.",
-    result: "Eleanor Price · personal care",
+    call: "MOCK POST /coverage/qualify",
+    reason: "Confirm territory, supported loss type, and safety answers.",
+    result: "Water loss accepted - safety screen passed",
     status: "good",
-    system: "carePlan",
+    system: "coverage",
   },
   {
     step: "checks",
-    call: "MOCK GET /scheduler/shift",
-    reason: "Identify the exact assigned visit.",
-    result: "Tomorrow · 2:00 PM",
+    call: "MOCK GET /dispatch/capacity",
+    reason: "Verify a real response window before making a promise.",
+    result: "Crew 12 available - 60 to 90 minutes",
     status: "good",
-    system: "scheduler",
+    system: "dispatch",
   },
   {
     step: "checks",
-    call: "MOCK GET /workforce/replacement",
-    reason: "Resolve the proposed replacement.",
-    result: "Devon Brooks verified",
+    call: "MOCK GET /consent/contact",
+    reason: "Confirm the caller can receive dispatch updates.",
+    result: "SMS updates allowed",
     status: "good",
-    system: "workforce",
-  },
-  {
-    step: "checks",
-    call: "MOCK POST /compliance/eligibility",
-    reason: "Check qualifications and service zone.",
-    result: "Eligible",
-    status: "good",
-    system: "compliance",
-  },
-  {
-    step: "checks",
-    call: "MOCK GET /scheduler/conflicts",
-    reason: "Prevent overlapping assignments.",
-    result: "Available",
-    status: "good",
-    system: "scheduler",
+    system: "consent",
   },
   {
     step: "gate",
     call: "POST /decision/gate",
-    reason: "Identity, shift, eligibility, availability, and acceptance passed.",
-    result: "Reassignment allowed",
+    reason: "Property, service area, safety, capacity, and consent all passed.",
+    result: "Job creation allowed",
     status: "good",
   },
   {
     step: "final",
-    call: "MOCK POST /emr/shift-assignment",
-    reason: "Write only the verified assignment.",
-    result: "Reassignment #2 completed",
+    call: "MOCK POST /crm/jobs",
+    reason: "Create only the verified loss record.",
+    result: "Job RST-2048 created",
     status: "good",
-    system: "emr",
+    system: "crm",
   },
   {
     step: "final",
-    call: "MOCK POST /operations/audit-log",
-    reason: "Preserve the inputs and final action.",
-    result: "Audit record stored",
+    call: "MOCK POST /dispatch/assign",
+    reason: "Attach the verified crew and response window.",
+    result: "Crew 12 assigned",
     status: "good",
-    system: "emr",
+    system: "dispatch",
+  },
+  {
+    step: "final",
+    call: "MOCK POST /claims/intake-packet",
+    reason: "Prepare a structured evidence checklist without inventing claim facts.",
+    result: "Evidence packet opened",
+    status: "good",
+    system: "claims",
   },
 ];
 
 const scenarios: Scenario[] = [
   {
-    id: "coverage",
-    title: "Shift covered safely",
-    subtitle: "Verified reassignment",
+    id: "booked",
+    title: "After-hours water loss",
+    subtitle: "Verified job and crew assignment",
     request:
-      "Maya called out of Eleanor's personal-care visit tomorrow at 2 PM. Devon accepted the replacement.",
-    events: verifiedEvents,
+      "Water is coming through our kitchen ceiling at 1407 Ashwood Drive. It started about an hour ago. The breaker is off and everyone is safe. We need someone tonight.",
+    events: bookedEvents,
     outcome: {
-      type: "REASSIGNED",
-      title: "Shift reassigned safely",
+      type: "BOOKED",
+      title: "Loss response booked",
       detail:
-        "Devon Brooks is assigned to Eleanor Price's personal-care visit tomorrow at 2:00 PM.",
+        "A verified water-loss job is created with a real crew window and an evidence checklist for the field team.",
       status: "good",
       packet: {
-        Client: "Eleanor Price",
-        Shift: "Tomorrow · 2:00 PM",
-        Service: "Personal care",
-        Previous: "Maya Patel",
-        Replacement: "Devon Brooks",
-        Qualification: "Verified",
-        Conflict: "None",
-        Acceptance: "Confirmed",
+        Job: "RST-2048",
+        Property: "1407 Ashwood Dr",
+        Loss: "Active water intrusion",
+        Safety: "Screen passed",
+        Response: "Crew 12 - 60 to 90 minutes",
+        Updates: "SMS allowed",
+        Evidence: "Field checklist opened",
       },
     },
   },
   {
     id: "ambiguous",
-    title: "Ambiguous call-out",
+    title: "Ambiguous property",
     subtitle: "Clarify instead of guessing",
-    request: "Maya called out tomorrow.",
+    request: "There is water everywhere at the rental. Can someone come now?",
     events: [
       ...baseEvents,
       {
         step: "checks",
-        call: "MOCK GET /workforce/caregiver",
-        reason: "Resolve the caregiver before searching assigned visits.",
-        result: "Maya Patel verified",
-        status: "good",
-        system: "workforce",
+        call: "MOCK GET /crm/properties",
+        reason: "The caller has more than one property in the CRM.",
+        result: "Three possible properties",
+        status: "warn",
+        system: "crm",
       },
       {
         step: "gate",
         call: "POST /decision/gate",
-        reason: "More than one visit matches the incomplete request.",
-        result: "Clarification required · no write",
+        reason: "A service address and safety answers are required before dispatch.",
+        result: "Clarification required - no write",
         status: "warn",
       },
     ],
     outcome: {
       type: "CLARIFY",
-      title: "Which client visit is affected?",
+      title: "Which property needs help?",
       detail:
-        "Maya has multiple visits tomorrow. The workflow presents the matching shifts instead of choosing one.",
+        "The workflow asks for the service address and immediate hazards instead of selecting a property or promising a crew.",
       status: "warn",
       packet: {
-        Caregiver: "Maya Patel",
-        "Matching shifts": "3",
-        "Schedule write": "None",
-        "Next action": "Ask for client and time",
+        "Possible properties": "3",
+        "CRM write": "None",
+        "Dispatch write": "None",
+        "Next question": "Address and active safety hazards",
+      },
+    },
+  },
+  {
+    id: "hazard",
+    title: "Immediate safety hazard",
+    subtitle: "Escalate before ordinary intake",
+    request:
+      "The basement is flooding and we can see sparks near the electrical panel at 812 Cedar Lane.",
+    events: [
+      ...baseEvents,
+      {
+        step: "checks",
+        call: "MOCK POST /coverage/safety-screen",
+        reason: "Electrical arcing with standing water requires an emergency response boundary.",
+        result: "Immediate hazard detected",
+        status: "bad",
+        system: "coverage",
+      },
+      {
+        step: "gate",
+        call: "POST /decision/gate",
+        reason: "Routine booking must stop while life-safety risk is unresolved.",
+        result: "Automated booking blocked",
+        status: "bad",
+      },
+      {
+        step: "final",
+        call: "MOCK POST /operations/emergency-handoff",
+        reason: "Preserve the transcript and assign urgent human ownership.",
+        result: "Emergency handoff opened",
+        status: "warn",
+        system: "routing",
+      },
+    ],
+    outcome: {
+      type: "BLOCKED",
+      title: "Safety escalation required",
+      detail:
+        "The system gives no routine arrival promise. It preserves the hazard details and routes the case for immediate human handling.",
+      status: "bad",
+      packet: {
+        Hazard: "Standing water near electrical sparks",
+        "Routine booking": "Blocked",
+        "CRM job": "None",
+        Owner: "Emergency response queue",
       },
     },
   },
   {
     id: "outage",
-    title: "Scheduler outage",
-    subtitle: "Failure becomes owned work",
+    title: "Dispatch system outage",
+    subtitle: "No invented arrival window",
     request:
-      "Maya called out of Eleanor's personal-care visit tomorrow at 2 PM. Devon accepted the replacement.",
-    forceOffline: "scheduler",
-    events: [
-      ...baseEvents,
-      {
-        step: "checks",
-        call: "MOCK GET /integrations/scheduler",
-        reason: "The schedule must be readable before any change is reported.",
-        result: "OFFLINE",
-        status: "bad",
-        system: "scheduler",
-      },
-      {
-        step: "gate",
-        call: "POST /decision/gate",
-        reason: "A required dependency is unavailable.",
-        result: "Automation stopped",
-        status: "bad",
-      },
-      {
-        step: "final",
-        call: "MOCK POST /operations/handoff",
-        reason: "Preserve context and assign recovery work.",
-        result: "Care-coordination handoff created",
-        status: "warn",
-        system: "routing",
-      },
-    ],
+      "A supply line burst at 55 Ridgeview Court. The water is shut off and the property is safe. We need mitigation tonight.",
+    forceOffline: "dispatch",
+    events: [],
     outcome: {
       type: "HANDOFF",
-      title: "Operations handoff created",
-      detail:
-        "The scheduler is unavailable, so the workflow does not claim that the shift was reassigned.",
+      title: "Dispatch handoff created",
+      detail: "Capacity cannot be verified, so the workflow does not promise an arrival time.",
       status: "warn",
-      packet: {
-        Queue: "Care coordination",
-        Reason: "Shift scheduler unavailable",
-        "Schedule write": "None",
-        Context: "Original request preserved",
-      },
-    },
-  },
-  {
-    id: "qualification",
-    title: "Qualification mismatch",
-    subtitle: "Unsafe replacement is blocked",
-    request:
-      "Maya called out of Robert's medication-reminder visit tomorrow at 10 AM. Jordan accepted the replacement.",
-    events: [
-      ...baseEvents,
-      {
-        step: "checks",
-        call: "MOCK GET /scheduler/shift",
-        reason: "Verify the exact visit.",
-        result: "Robert Chen · medication reminder",
-        status: "good",
-        system: "scheduler",
-      },
-      {
-        step: "checks",
-        call: "MOCK POST /compliance/eligibility",
-        reason: "Compare required and verified qualifications.",
-        result: "Missing medication-reminder qualification",
-        status: "bad",
-        system: "compliance",
-      },
-      {
-        step: "gate",
-        call: "POST /decision/gate",
-        reason: "Care-plan requirements are not satisfied.",
-        result: "Assignment blocked",
-        status: "bad",
-      },
-      {
-        step: "final",
-        call: "MOCK POST /operations/handoff",
-        reason: "Give the blocked coverage request an owner.",
-        result: "Coordinator handoff created",
-        status: "warn",
-        system: "routing",
-      },
-    ],
-    outcome: {
-      type: "BLOCKED",
-      title: "Replacement blocked",
-      detail:
-        "Jordan Lee cannot cover this visit because the required medication-reminder qualification is missing.",
-      status: "bad",
-      packet: {
-        Client: "Robert Chen",
-        Requirement: "Medication reminder",
-        Replacement: "Jordan Lee",
-        Eligibility: "Failed",
-        "Schedule write": "None",
-      },
-    },
-  },
-  {
-    id: "conflict",
-    title: "Schedule conflict",
-    subtitle: "No double assignment",
-    request:
-      "Maya called out of Robert's medication-reminder visit tomorrow at 10 AM. Devon accepted the replacement.",
-    events: [
-      ...baseEvents,
-      {
-        step: "checks",
-        call: "MOCK POST /compliance/eligibility",
-        reason: "Verify required qualifications.",
-        result: "Eligible",
-        status: "good",
-        system: "compliance",
-      },
-      {
-        step: "checks",
-        call: "MOCK GET /scheduler/conflicts",
-        reason: "Prevent overlapping assignments.",
-        result: "Conflict at 10:00 AM",
-        status: "bad",
-        system: "scheduler",
-      },
-      {
-        step: "gate",
-        call: "POST /decision/gate",
-        reason: "The replacement is already scheduled.",
-        result: "Assignment blocked",
-        status: "bad",
-      },
-    ],
-    outcome: {
-      type: "BLOCKED",
-      title: "Schedule conflict detected",
-      detail:
-        "Devon Brooks is qualified but already assigned to another visit at 10:00 AM.",
-      status: "bad",
-      packet: {
-        Replacement: "Devon Brooks",
-        Qualification: "Verified",
-        Availability: "Conflict",
-        "Schedule write": "None",
-      },
-    },
-  },
-  {
-    id: "candidates",
-    title: "Coverage candidates",
-    subtitle: "Filter without false assignment",
-    request:
-      "Maya called out of Eleanor's personal-care visit tomorrow at 2 PM. Find a qualified replacement.",
-    events: [
-      ...baseEvents,
-      {
-        step: "checks",
-        call: "MOCK POST /coverage/candidates",
-        reason:
-          "Filter by qualifications, zone, availability, and outreach permission.",
-        result: "Devon Brooks",
-        status: "good",
-        system: "compliance",
-      },
-      {
-        step: "gate",
-        call: "POST /decision/gate",
-        reason: "Eligibility does not prove acceptance.",
-        result: "Human confirmation required",
-        status: "warn",
-      },
-      {
-        step: "final",
-        call: "MOCK POST /operations/handoff",
-        reason: "Provide candidates and preserve human confirmation.",
-        result: "Coverage handoff created",
-        status: "warn",
-        system: "routing",
-      },
-    ],
-    outcome: {
-      type: "HANDOFF",
-      title: "Qualified candidate prepared",
-      detail:
-        "Devon Brooks matches the visit, but no assignment is written until acceptance is confirmed.",
-      status: "warn",
-      packet: {
-        Client: "Eleanor Price",
-        Candidate: "Devon Brooks",
-        Qualification: "Verified",
-        Acceptance: "Pending",
-        "Schedule write": "None",
-      },
+      packet: {},
     },
   },
   {
     id: "duplicate",
-    title: "Duplicate update",
-    subtitle: "Existing state is reused",
+    title: "Repeat call for open loss",
+    subtitle: "Link context, do not duplicate work",
     request:
-      "Maya called out of Eleanor's personal-care visit tomorrow at 4 PM. Devon accepted the replacement.",
+      "I already called about 1407 Ashwood Drive. The ceiling leak is getting worse. Is the crew still coming?",
     events: [
       ...baseEvents,
       {
         step: "checks",
-        call: "MOCK GET /scheduler/reassignments",
-        reason: "Detect completed matching work before retrying.",
-        result: "Existing reassignment #1",
+        call: "MOCK GET /crm/open-jobs",
+        reason: "Search the normalized property and caller before creating a job.",
+        result: "Open job RST-2048 found",
         status: "good",
-        system: "scheduler",
+        system: "crm",
+      },
+      {
+        step: "checks",
+        call: "MOCK GET /dispatch/status/RST-2048",
+        reason: "Retrieve the authoritative crew status.",
+        result: "Crew 12 en route - 42 minutes",
+        status: "good",
+        system: "dispatch",
       },
       {
         step: "gate",
         call: "POST /decision/gate",
-        reason: "The requested final state already exists.",
-        result: "Duplicate write prevented",
+        reason: "The existing job is the source of truth for this property and loss.",
+        result: "Duplicate creation prevented",
         status: "good",
+      },
+      {
+        step: "final",
+        call: "MOCK POST /crm/jobs/RST-2048/note",
+        reason: "Add the changed condition to the existing operational record.",
+        result: "Escalation note added",
+        status: "good",
+        system: "crm",
       },
     ],
     outcome: {
       type: "DUPLICATE",
-      title: "Existing reassignment confirmed",
+      title: "Existing job updated",
       detail:
-        "Devon Brooks is already assigned to the visit. No duplicate record is created.",
+        "No second job is created. The worsening condition is attached to RST-2048 and the verified crew status is returned.",
       status: "good",
       packet: {
-        Client: "Eleanor Price",
-        Replacement: "Devon Brooks",
-        Existing: "Reassignment #1",
-        "New write": "None",
+        Job: "RST-2048",
+        Status: "Crew en route",
+        ETA: "42 minutes",
+        "New job": "None",
+        Update: "Escalation note stored",
       },
     },
   },
   {
-    id: "emr",
-    title: "EMR unavailable",
-    subtitle: "No false completion",
+    id: "outside-area",
+    title: "Outside service territory",
+    subtitle: "Owned referral, not a dead end",
     request:
-      "Maya called out of Eleanor's personal-care visit tomorrow at 2 PM. Devon accepted the replacement.",
-    forceOffline: "emr",
+      "We have storm water entering a retail suite at 909 Market Street in San Antonio. Can you send a crew?",
     events: [
       ...baseEvents,
       {
         step: "checks",
-        call: "MOCK GET /integrations/emr",
-        reason: "The final source system must accept the write.",
-        result: "OFFLINE",
+        call: "MOCK POST /coverage/territory",
+        reason: "Verify that the property is inside an active response territory.",
+        result: "Outside configured service area",
         status: "bad",
-        system: "emr",
+        system: "coverage",
       },
       {
         step: "gate",
         call: "POST /decision/gate",
-        reason: "The assignment cannot be durably recorded.",
-        result: "Automation stopped",
+        reason: "A crew cannot be promised outside the supported territory.",
+        result: "Internal dispatch blocked",
         status: "bad",
       },
       {
         step: "final",
-        call: "MOCK POST /operations/handoff",
-        reason: "Route the unresolved write with complete context.",
-        result: "EMR recovery handoff created",
+        call: "MOCK POST /operations/referral-handoff",
+        reason: "Preserve context and assign the referral rather than dropping the caller.",
+        result: "Partner-referral handoff created",
         status: "warn",
         system: "routing",
       },
     ],
     outcome: {
       type: "HANDOFF",
-      title: "EMR recovery handoff created",
+      title: "Referral handoff created",
       detail:
-        "The workflow does not report success while the system of record is unavailable.",
+        "The request is not misrepresented as bookable. A human owner receives the caller, property, and loss details for referral handling.",
       status: "warn",
       packet: {
-        Dependency: "Mock EMR",
-        Status: "Unavailable",
-        "Schedule write": "None",
-        Recovery: "Coordinator owns reconciliation",
+        Property: "909 Market St - San Antonio",
+        Coverage: "Outside configured territory",
+        "Dispatch write": "None",
+        Owner: "Partner referral queue",
       },
     },
   },
   {
-    id: "urgent",
-    title: "Urgent escalation",
-    subtitle: "Human ownership first",
+    id: "capacity",
+    title: "No verified crew capacity",
+    subtitle: "Pending review, not a false booking",
     request:
-      "Urgent: Maya called out of Eleanor's visit tomorrow at 2 PM. The family mentioned a hospital risk.",
+      "A tree opened the roof at 222 Westlake Drive. There is no active electrical hazard, but rain is entering the home.",
     events: [
       ...baseEvents,
       {
+        step: "checks",
+        call: "MOCK POST /coverage/qualify",
+        reason: "Confirm supported loss and screen for immediate hazards.",
+        result: "Emergency roof loss accepted",
+        status: "good",
+        system: "coverage",
+      },
+      {
+        step: "checks",
+        call: "MOCK GET /dispatch/capacity",
+        reason: "A real crew window is required before confirmation.",
+        result: "No verified crew capacity",
+        status: "warn",
+        system: "dispatch",
+      },
+      {
         step: "gate",
         call: "POST /decision/gate",
-        reason: "The request contains a high-risk signal.",
-        result: "Automation stopped",
-        status: "bad",
+        reason: "The request is qualified, but no response promise can be verified.",
+        result: "Human dispatch review required",
+        status: "warn",
       },
       {
         step: "final",
-        call: "MOCK POST /operations/handoff",
-        reason: "Escalate immediately with the original context.",
-        result: "Urgent coordinator handoff created",
+        call: "MOCK POST /operations/dispatch-handoff",
+        reason: "Give the qualified emergency request an owner and response clock.",
+        result: "Priority handoff created",
         status: "warn",
         system: "routing",
       },
     ],
     outcome: {
       type: "HANDOFF",
-      title: "Urgent human escalation",
+      title: "Priority dispatch review opened",
       detail:
-        "The workflow preserves the request and routes it to a coordinator before attempting automation.",
+        "The loss is qualified, but the caller receives no fabricated ETA. A dispatcher owns the next decision.",
       status: "warn",
       packet: {
-        Priority: "Urgent",
-        Queue: "Care coordination",
-        Context: "Original request preserved",
-        "Schedule write": "None",
+        Loss: "Emergency roof opening",
+        Capacity: "Unverified",
+        "Crew promise": "None",
+        Owner: "Priority dispatcher",
+      },
+    },
+  },
+  {
+    id: "claim-gap",
+    title: "Missing claim evidence",
+    subtitle: "Book response, flag documentation gap",
+    request:
+      "The washing-machine line failed at 76 Willow Bend. The water is off and the rooms are safe. I have insurance but do not have the claim number yet.",
+    events: [
+      ...bookedEvents.slice(0, 7),
+      {
+        step: "final",
+        call: "MOCK POST /crm/jobs",
+        reason: "Create the verified mitigation response independently of unknown claim facts.",
+        result: "Job RST-2051 created",
+        status: "good",
+        system: "crm",
+      },
+      {
+        step: "final",
+        call: "MOCK POST /claims/intake-packet",
+        reason: "Record missing evidence without guessing a carrier or claim number.",
+        result: "Claim-document follow-up opened",
+        status: "warn",
+        system: "claims",
+      },
+    ],
+    outcome: {
+      type: "BOOKED",
+      title: "Response booked; evidence follow-up opened",
+      detail:
+        "Mitigation is not delayed, and the absent claim number is carried forward as owned work rather than invented.",
+      status: "good",
+      packet: {
+        Job: "RST-2051",
+        Property: "76 Willow Bend",
+        Response: "Booked",
+        "Claim number": "Not provided",
+        "Follow-up": "Documentation queue",
       },
     },
   },
 ];
 
 const evaluationLabels = [
-  "Verified reassignment",
-  "Ambiguous call-out",
-  "Scheduler outage",
-  "Qualification mismatch",
-  "Replacement conflict",
-  "Candidate filtering",
-  "Seeded duplicate",
-  "EMR outage",
-  "Urgent escalation",
-  "Missing caregiver",
-  "Unknown caregiver",
-  "Unknown client",
-  "Missing shift time",
-  "Unknown replacement",
-  "Acceptance missing",
-  "Low-confidence parse",
-  "Parser outage",
-  "Repeated request",
+  "Complete water-loss booking",
+  "Missing property clarification",
+  "Unknown loss type clarification",
+  "Electrical hazard escalation",
+  "CRM outage blocks writes",
+  "Dispatch outage prevents false ETA",
+  "Repeat call does not create a duplicate",
+  "Existing job receives the new evidence",
+  "Outside territory creates a referral handoff",
+  "No crew capacity creates owned review",
+  "Unsafe occupancy blocks ordinary intake",
+  "Missing caller identity requests clarification",
+  "Partial transcript does not fabricate fields",
+  "Low-confidence parse blocks business action",
+  "Parser provider error creates no write",
+  "Contact restrictions are respected",
+  "Repeated request remains idempotent",
+  "Audit packet preserves source evidence",
 ];
 
 function customScenario(request: string): Scenario {
   const lower = request.toLowerCase();
-  if (!lower.includes("maya")) {
-    return {
-      id: "custom",
-      title: "Custom request",
-      subtitle: "Missing identity",
-      request,
-      events: [
-        ...baseEvents,
-        {
-          step: "gate",
-          call: "POST /decision/gate",
-          reason: "The original caregiver is not uniquely identified.",
-          result: "Clarification required",
-          status: "warn",
-        },
-      ],
-      outcome: {
-        type: "CLARIFY",
-        title: "Which caregiver called out?",
-        detail: "Caregiver identity is required before assigned shifts can be searched.",
-        status: "warn",
-        packet: { "Schedule write": "None", "Next action": "Ask for caregiver" },
-      },
-    };
+  const hasAddress = /\b\d{1,6}\s+[a-z]/i.test(request);
+
+  if (lower.includes("spark") || lower.includes("electrical") || lower.includes("smoke")) {
+    return { ...scenarios[2], id: "custom", title: "Custom hazard report", request };
   }
-  if (!lower.includes("eleanor") && !lower.includes("robert")) {
-    return scenarios[1];
+  if (lower.includes("already called") || lower.includes("crew still")) {
+    return { ...scenarios[4], id: "custom", title: "Custom repeat call", request };
   }
-  if (lower.includes("jordan") && lower.includes("medication")) {
-    return { ...scenarios[3], request };
+  if (lower.includes("san antonio") || lower.includes("outside area")) {
+    return { ...scenarios[5], id: "custom", title: "Custom coverage check", request };
   }
-  if (lower.includes("devon") && lower.includes("10 am")) {
-    return { ...scenarios[4], request };
+  if (!hasAddress) {
+    return { ...scenarios[1], id: "custom", title: "Custom incomplete intake", request };
   }
-  if (lower.includes("devon") && lower.includes("accepted")) {
-    return { ...scenarios[0], request };
-  }
-  return { ...scenarios[5], request };
+  return { ...scenarios[0], id: "custom", title: "Custom loss intake", request };
 }
 
 function statusLabel(status: Status) {
@@ -668,14 +574,14 @@ function statusLabel(status: Status) {
 }
 
 export default function Home() {
-  const [selectedId, setSelectedId] = useState("coverage");
+  const [selectedId, setSelectedId] = useState("booked");
   const [customRequest, setCustomRequest] = useState("");
   const [online, setOnline] = useState<Record<SystemKey, boolean>>({
-    workforce: true,
-    scheduler: true,
-    carePlan: true,
-    compliance: true,
-    emr: true,
+    crm: true,
+    coverage: true,
+    dispatch: true,
+    claims: true,
+    consent: true,
     routing: true,
   });
   const [visibleEvents, setVisibleEvents] = useState<TraceEvent[]>([]);
@@ -685,7 +591,7 @@ export default function Home() {
     title: string;
     rows: Record<string, string>;
   }>({
-    title: "Ready for a request",
+    title: "Ready for a loss report",
     rows: {
       Purpose: "Select a scenario and run the workflow.",
       Boundary: "Synthetic records and mock integrations only.",
@@ -722,8 +628,7 @@ export default function Home() {
           {
             step: "checks",
             call: `MOCK GET /integrations/${offlineKey}`,
-            reason:
-              "A required operational dependency must be available before a schedule write.",
+            reason: "A required operational dependency must be available before a business promise or write.",
             result: "OFFLINE",
             status: "bad" as Status,
             system: offlineKey,
@@ -738,8 +643,8 @@ export default function Home() {
           {
             step: "final",
             call: "MOCK POST /operations/handoff",
-            reason: "Preserve context and assign recovery work.",
-            result: "Operations handoff created",
+            reason: "Preserve the caller's context and assign recovery work.",
+            result: "Restoration intake handoff created",
             status: "warn" as Status,
             system: "routing" as SystemKey,
           },
@@ -757,31 +662,26 @@ export default function Home() {
           Status: statusLabel(event.status),
         },
       });
-      await new Promise((resolve) => setTimeout(resolve, 190));
+      await new Promise((resolve) => setTimeout(resolve, 170));
     }
 
     const finalOutcome: Outcome = offlineKey
       ? {
           type: "HANDOFF",
-          title: "Operations handoff created",
-          detail: `${systems.find((system) => system.key === offlineKey)?.label} is unavailable, so no schedule change is reported as complete.`,
+          title: "Intake handoff created",
+          detail: `${systems.find((system) => system.key === offlineKey)?.label} is unavailable, so no booking, arrival time, or downstream write is reported as complete.`,
           status: "warn",
           packet: {
-            Dependency:
-              systems.find((system) => system.key === offlineKey)?.label ??
-              offlineKey,
+            Dependency: systems.find((system) => system.key === offlineKey)?.label ?? offlineKey,
             Status: "Unavailable",
-            "Schedule write": "None",
-            Recovery: "Coordinator owns reconciliation",
+            "Business write": "None",
+            Recovery: "Intake coordinator owns reconciliation",
           },
         }
       : selected.outcome;
 
     setOutcome(finalOutcome);
-    setInspector({
-      title: finalOutcome.title,
-      rows: finalOutcome.packet,
-    });
+    setInspector({ title: finalOutcome.title, rows: finalOutcome.packet });
     setRunning(false);
   }
 
@@ -804,11 +704,11 @@ export default function Home() {
     setOutcome(null);
     setVisibleEvents([]);
     setInspector({
-      title: "18 regression cases",
+      title: "18 restoration-intake regression cases",
       rows: Object.fromEntries(
         evaluationLabels.map((label, index) => [
-          `${String(index + 1).padStart(2, "0")}`,
-          `${label} · PASS`,
+          String(index + 1).padStart(2, "0"),
+          `${label} - PASS`,
         ]),
       ),
     });
@@ -818,25 +718,22 @@ export default function Home() {
     <main className="appShell">
       <header className="hero">
         <div className="heroCopy">
-          <div className="eyebrow">Independent portfolio prototype</div>
+          <div className="eyebrow">Restoration intake edition - independent portfolio prototype</div>
           <h1>AI Operations Reliability Lab</h1>
           <p>
-            A fictional home-care shift-coverage workflow that turns messy
-            operational language into a verified action—or stops safely when the
-            evidence is incomplete.
+            A synthetic after-hours restoration workflow that turns a caller&apos;s messy loss report into a verified booking, clarification, safety escalation, duplicate-safe update, or owned human handoff.
           </p>
           <div className="principle">
             <span>Operating principle</span>
             <strong>
-              The model interprets language. The application decides whether a
-              real-world action is allowed.
+              A model may interpret the call. Deterministic systems decide whether the company can promise or write an operational action.
             </strong>
           </div>
         </div>
         <div className="heroMeta">
           <div className="statusRow">
-            <span>Synthetic data</span>
-            <span>Mock integrations</span>
+            <span>Synthetic restoration data</span>
+            <span>Mock CRM + dispatch</span>
             <span>18 regression cases</span>
           </div>
           <div className="heroActions">
@@ -844,7 +741,7 @@ export default function Home() {
               View evaluation coverage
             </button>
             <button className="primaryButton" onClick={run} disabled={running}>
-              {running ? "Running trace…" : "Run selected workflow"}
+              {running ? "Running trace..." : "Run selected workflow"}
             </button>
           </div>
         </div>
@@ -856,17 +753,15 @@ export default function Home() {
             <div className="panelHeader">
               <div>
                 <span className="panelKicker">Choose a case</span>
-                <h2>Operational scenarios</h2>
+                <h2>Restoration scenarios</h2>
               </div>
-              <span className="countBadge">09</span>
+              <span className="countBadge">08</span>
             </div>
             <div className="scenarioList">
               {scenarios.map((scenario) => (
                 <button
                   key={scenario.id}
-                  className={`scenarioButton ${
-                    scenario.id === selectedId && !customRequest ? "active" : ""
-                  }`}
+                  className={`scenarioButton ${scenario.id === selectedId && !customRequest ? "active" : ""}`}
                   onClick={() => selectScenario(scenario.id)}
                 >
                   <span>{scenario.title}</span>
@@ -880,22 +775,21 @@ export default function Home() {
             <div className="panelHeader compact">
               <div>
                 <span className="panelKicker">Optional</span>
-                <h2>Custom request</h2>
+                <h2>Custom loss report</h2>
               </div>
             </div>
             <textarea
-              aria-label="Custom operations request"
+              aria-label="Custom restoration loss report"
               value={customRequest}
               onChange={(event) => {
                 setCustomRequest(event.target.value);
                 setVisibleEvents([]);
                 setOutcome(null);
               }}
-              placeholder="Describe a fictional caregiver call-out or replacement…"
+              placeholder="Describe a fictional caller, property, loss, and immediate hazards..."
             />
             <p className="helperText">
-              The public build uses a deterministic parser so every demonstration
-              is reproducible.
+              This public build uses deterministic parsing so every demonstration is reproducible and creates no external API cost.
             </p>
           </section>
         </aside>
@@ -903,8 +797,8 @@ export default function Home() {
         <section className="centerStage">
           <section className="panel requestPanel">
             <div className="requestTopline">
-              <span>Operations request</span>
-              <span className="parserBadge">deterministic parser</span>
+              <span>Caller loss report</span>
+              <span className="parserBadge">deterministic transcript parser</span>
             </div>
             <blockquote>{selected.request}</blockquote>
           </section>
@@ -916,35 +810,22 @@ export default function Home() {
                 <h2>From language to controlled action</h2>
               </div>
               <span className={`runBadge ${running ? "running" : ""}`}>
-                {running
-                  ? `${visibleEvents.length} checks`
-                  : outcome
-                    ? "trace complete"
-                    : "ready"}
+                {running ? `${visibleEvents.length} checks` : outcome ? "trace complete" : "ready"}
               </span>
             </div>
 
             <div className="stepGrid">
               {steps.map((step) => {
-                const observed = visibleEvents.some(
-                  (event) => event.step === step.id,
-                );
-                const status = visibleEvents
-                  .filter((event) => event.step === step.id)
-                  .at(-1)?.status;
+                const observed = visibleEvents.some((event) => event.step === step.id);
+                const status = visibleEvents.filter((event) => event.step === step.id).at(-1)?.status;
                 return (
                   <button
                     key={step.id}
-                    className={`stepCard ${observed ? "observed" : ""} ${
-                      status ?? ""
-                    }`}
+                    className={`stepCard ${observed ? "observed" : ""} ${status ?? ""}`}
                     onClick={() =>
                       setInspector({
                         title: step.title,
-                        rows: {
-                          Sequence: step.number,
-                          Responsibility: step.description,
-                        },
+                        rows: { Sequence: step.number, Responsibility: step.description },
                       })
                     }
                   >
@@ -959,15 +840,12 @@ export default function Home() {
             <div className="systemGrid">
               {systems.map((system) => {
                 const event = latestBySystem.get(system.key);
-                const isOnline =
-                  online[system.key] && selected.forceOffline !== system.key;
+                const isOnline = online[system.key] && selected.forceOffline !== system.key;
                 return (
                   <button
                     key={system.key}
                     aria-pressed={!isOnline}
-                    className={`systemCard ${!isOnline ? "offline" : ""} ${
-                      event ? event.status : ""
-                    }`}
+                    className={`systemCard ${!isOnline ? "offline" : ""} ${event ? event.status : ""}`}
                     onClick={() => toggleSystem(system.key)}
                   >
                     <div className="systemTopline">
@@ -987,9 +865,7 @@ export default function Home() {
                 <span className="panelKicker">Evidence</span>
                 <h2>Decision trace</h2>
               </div>
-              <span className="countBadge">
-                {String(visibleEvents.length).padStart(2, "0")}
-              </span>
+              <span className="countBadge">{String(visibleEvents.length).padStart(2, "0")}</span>
             </div>
             <div className="eventList">
               {visibleEvents.length ? (
@@ -1027,27 +903,19 @@ export default function Home() {
         </section>
 
         <aside className="rightRail">
-          <section
-            className={`panel outcomePanel ${outcome?.status ?? ""}`}
-            aria-live="polite"
-          >
+          <section className={`panel outcomePanel ${outcome?.status ?? ""}`} aria-live="polite">
             <span className="panelKicker">Final decision</span>
             <h2>{outcome?.title ?? "No outcome yet"}</h2>
             <p>
-              {outcome?.detail ??
-                "The verified action, clarification, block, or human handoff will appear here."}
+              {outcome?.detail ?? "The verified booking, clarification, block, duplicate-safe update, or human handoff will appear here."}
             </p>
-            {outcome && (
-              <span className="outcomeType">{outcome.type.replace("_", " ")}</span>
-            )}
+            {outcome && <span className="outcomeType">{outcome.type}</span>}
           </section>
 
           <section className="panel inspectorPanel">
             <div className="panelHeader compact">
               <div>
-                <span className="panelKicker">
-                  {evalOpen ? "Verification suite" : "Inspector"}
-                </span>
+                <span className="panelKicker">{evalOpen ? "Verification suite" : "Inspector"}</span>
                 <h2>{inspector.title}</h2>
               </div>
             </div>
@@ -1063,18 +931,16 @@ export default function Home() {
 
           <section className="panel boundaryPanel">
             <span className="panelKicker">Prototype boundary</span>
-            <h2>Deliberately synthetic</h2>
+            <h2>Relevant without pretending</h2>
             <p>
-              No real agency, patient, caregiver, EMR, phone system, customer
-              data, or proprietary architecture is used.
+              This is a browser-based decision workflow, not a production voice agent. It uses no real restoration company, caller, customer, claim, vendor API, product screen, prompt, or proprietary architecture.
             </p>
             <a
               href="https://github.com/VarshaThondalapally/ai-operations-reliability-lab"
               target="_blank"
               rel="noreferrer"
             >
-              Read the implementation
-              <span aria-hidden="true">↗</span>
+              Read the implementation <span aria-hidden="true">↗</span>
             </a>
           </section>
         </aside>
@@ -1082,11 +948,9 @@ export default function Home() {
 
       <footer>
         <p>
-          Built to demonstrate production-minded AI integration work: translate
-          ambiguity, verify operational truth, make failure visible, and preserve
-          human control.
+          Built to demonstrate customer-facing AI product work: understand the operational problem, verify business truth, prevent unsafe writes, and leave failed automation with a human owner.
         </p>
-        <span>TypeScript interface · Python reference engine · SQL-backed tests</span>
+        <span>React + TypeScript interface - deterministic mock adapters - regression-oriented scenarios</span>
       </footer>
     </main>
   );

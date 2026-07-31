@@ -1,16 +1,16 @@
 @import "tailwindcss";
 
 :root {
-  --ink: #15231f;
-  --muted: #66736e;
-  --paper: #f6f7f3;
+  --ink: #14242d;
+  --muted: #65747c;
+  --paper: #f5f7f8;
   --card: rgba(255, 255, 255, 0.92);
   --line: #dfe4dd;
-  --forest: #174f3f;
-  --forest-2: #226b56;
-  --mint: #dceee5;
-  --mint-2: #eef7f2;
-  --amber: #a86610;
+  --forest: #143f4a;
+  --forest-2: #1c6574;
+  --mint: #dcecf0;
+  --mint-2: #edf6f7;
+  --amber: #a75a14;
   --amber-soft: #fff1d8;
   --red: #a63d32;
   --red-soft: #fde9e5;
@@ -31,7 +31,7 @@ html {
 body {
   margin: 0;
   background:
-    radial-gradient(circle at 9% -8%, rgba(74, 138, 107, 0.15), transparent 27rem),
+    radial-gradient(circle at 9% -8%, rgba(36, 120, 139, 0.15), transparent 27rem),
     radial-gradient(circle at 94% 0%, rgba(49, 95, 125, 0.09), transparent 24rem),
     var(--paper);
   color: var(--ink);
@@ -66,10 +66,10 @@ button {
   align-items: end;
   gap: 36px;
   padding: 34px 38px;
-  border: 1px solid rgba(23, 79, 63, 0.14);
+  border: 1px solid rgba(20, 63, 74, 0.14);
   border-radius: 26px;
   background:
-    linear-gradient(118deg, rgba(255, 255, 255, 0.97), rgba(240, 248, 243, 0.92)),
+    linear-gradient(118deg, rgba(255, 255, 255, 0.97), rgba(238, 247, 249, 0.92)),
     var(--card);
   box-shadow: var(--shadow);
   overflow: hidden;
@@ -86,8 +86,8 @@ button {
   top: -124px;
   background: repeating-radial-gradient(
     circle at center,
-    rgba(23, 79, 63, 0.08) 0,
-    rgba(23, 79, 63, 0.08) 1px,
+    rgba(20, 63, 74, 0.08) 0,
+    rgba(20, 63, 74, 0.08) 1px,
     transparent 2px,
     transparent 14px
   );
@@ -203,7 +203,7 @@ button {
   border: 1px solid var(--forest);
   background: var(--forest);
   color: #fff;
-  box-shadow: 0 10px 24px rgba(23, 79, 63, 0.2);
+  box-shadow: 0 10px 24px rgba(20, 63, 74, 0.2);
 }
 
 .secondaryButton {

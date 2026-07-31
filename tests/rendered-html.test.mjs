@@ -30,6 +30,7 @@ test("server-renders the reliability lab", async () => {
   const html = await response.text();
   assert.match(html, /<title>AI Operations Reliability Lab<\/title>/i);
   assert.match(html, /From language to controlled action/i);
-  assert.match(html, /Synthetic data/i);
-  assert.match(html, /Run the workflow/i);
+  assert.match(html, /Synthetic restoration data/i);
+  assert.match(html, /Run selected workflow/i);
+  assert.match(html, /Restoration intake edition/i);
 });

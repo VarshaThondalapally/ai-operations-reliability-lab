@@ -15,7 +15,7 @@ const geistMono = Geist_Mono({
 
 const title = "AI Operations Reliability Lab";
 const description =
-  "A synthetic home-care shift-coverage prototype demonstrating safe AI-assisted operational actions.";
+  "A synthetic restoration-intake prototype demonstrating how AI-assisted calls become verified bookings, clarifications, safety escalations, or owned handoffs.";
 
 export async function generateMetadata(): Promise<Metadata> {
   const requestHeaders = await headers();
@@ -41,7 +41,7 @@ export async function generateMetadata(): Promise<Metadata> {
           url: `${origin}/og.png`,
           width: 1736,
           height: 907,
-          alt: "AI Operations Reliability Lab workflow",
+          alt: "AI Operations Reliability Lab restoration-intake workflow",
         },
       ],
     },
